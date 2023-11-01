@@ -1,16 +1,30 @@
-# This is a sample Python script.
+import asyncio
+import logging
+import time
 
-# Press Maj+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from asyncua import Client
+
+_logger = logging.getLogger(__name__)
+
+async def main():
+    url = "opc.tcp://10.4.1.134:4840"
+    async with Client(url=url) as client:
+        uri = "http://monURI"
+        idx = await client.get_namespace_index(uri)
+
+        object = client.get_objects_node()
+        objects = await object.get_child([f'{idx}:NX1021020_Boudineuse', f'{idx}:GlobalVars'])
+        acquisitions = await objects.get_variables()
+
+        while True :
+            for acquisition in acquisitions:
+                name = (await acquisition.read_display_name()).Text
+                if "acquisition" in name :
+                    print(await acquisition.read_value())
+            print("---------------")
+            time.sleep(1.5)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(main())
